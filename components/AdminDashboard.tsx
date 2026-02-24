@@ -14,7 +14,8 @@ import {
   ShieldAlert,
   RotateCcw,
   X,
-  Check
+  Check,
+  Database
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -25,9 +26,10 @@ interface AdminDashboardProps {
   rankProfit: number;
   onResetRankProfit: () => void;
   onLogout: () => void;
+  dbStatus?: { connected: boolean; error: string | null };
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, loans, registeredUsersCount, systemBudget, rankProfit, onResetRankProfit, onLogout }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, loans, registeredUsersCount, systemBudget, rankProfit, onResetRankProfit, onLogout, dbStatus }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const settledLoans = loans.filter(l => l.status === 'ĐÃ TẤT TOÁN');
@@ -71,9 +73,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, loans, registered
           </div>
           <div>
             <h2 className="text-xl font-black text-white tracking-tighter uppercase leading-none">NDV Money Admin</h2>
-            <div className="flex items-center gap-1.5 mt-1">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Hệ thống trực tuyến</span>
+            <div className="flex items-center gap-3 mt-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Hệ thống trực tuyến</span>
+              </div>
+              <div className="w-px h-2 bg-white/10"></div>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${dbStatus?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></div>
+                <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${dbStatus?.connected ? 'text-gray-500' : 'text-red-500'}`}>
+                  DB: {dbStatus?.connected ? 'CONNECTED' : 'ERROR'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -81,6 +92,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, loans, registered
           <LogOut size={20} />
         </button>
       </div>
+
+      {dbStatus && !dbStatus.connected && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-[2rem] p-5 flex flex-col gap-3 shadow-lg shadow-red-950/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+              <Database size={20} className="text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-red-600 uppercase tracking-widest leading-none mb-1.5">Lỗi kết nối MongoDB</p>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Hệ thống không thể kết nối tới cơ sở dữ liệu.</p>
+            </div>
+          </div>
+          <div className="bg-black/40 p-3 rounded-xl border border-red-900/20">
+            <p className="text-[8px] font-mono text-red-400 break-all uppercase tracking-tighter">Error: {dbStatus.error}</p>
+          </div>
+        </div>
+      )}
 
       {isBudgetAlarm && (
         <div className="bg-red-600/10 border border-red-600/30 rounded-[2rem] p-5 flex flex-col items-center text-center gap-3 animate-pulse shadow-lg shadow-red-950/10">

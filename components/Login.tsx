@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Lock, Eye, EyeOff, AlertCircle, Database, CheckCircle2 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (phone: string, password: string) => void;
   onNavigateRegister: () => void;
   error?: string | null;
+  dbStatus?: { connected: boolean; error: string | null };
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister, error }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister, error, dbStatus }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -168,6 +169,21 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister, error }) => 
       >
         Chưa có tài khoản? <span className="text-gray-400">Đăng ký ngay</span>
       </button>
+
+      {/* Database Connection Status */}
+      <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5">
+        {dbStatus?.connected ? (
+          <>
+            <CheckCircle2 size={12} className="text-green-500" />
+            <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">MongoDB: Connected</span>
+          </>
+        ) : (
+          <>
+            <Database size={12} className="text-red-500 animate-pulse" />
+            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">MongoDB: Error</span>
+          </>
+        )}
+      </div>
 
       <div className="mt-auto pb-10">
         <p className="text-[9px] font-bold text-gray-800 tracking-widest uppercase">Secured by NDV Money Financial Group</p>

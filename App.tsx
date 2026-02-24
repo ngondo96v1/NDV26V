@@ -62,6 +62,8 @@ const App: React.FC = () => {
   const [rankProfit, setRankProfit] = useState<number>(0); 
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [dbConnected, setDbConnected] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const addNotification = (userId: string, title: string, message: string, type: 'LOAN' | 'RANK' | 'SYSTEM') => {
@@ -78,10 +80,29 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    const checkDbStatus = async () => {
+      try {
+        const response = await fetch('/api/db-status');
+        if (response.ok) {
+          const status = await response.json();
+          setDbConnected(status.connected);
+          if (!status.connected) {
+            setDbError(status.error || "Không thể kết nối với cơ sở dữ liệu MongoDB.");
+          } else {
+            setDbError(null);
+          }
+        }
+      } catch (e) {
+        console.error("Lỗi kiểm tra trạng thái DB:", e);
+      }
+    };
+
     const fetchData = async (retries = 3) => {
       try {
         const response = await fetch('/api/data');
         if (!response.ok) {
+          // If data fetch fails, check DB status specifically
+          await checkDbStatus();
           throw new Error(`Server returned ${response.status}: ${response.statusText}`);
         }
         
@@ -96,6 +117,8 @@ const App: React.FC = () => {
         let data;
         try {
           data = JSON.parse(text);
+          setDbError(null); // Clear error if data fetch succeeds
+          setDbConnected(true);
         } catch (parseError) {
           console.error("Lỗi parse JSON. Nội dung phản hồi:", text.slice(0, 200));
           throw new Error("Dữ liệu từ server không hợp lệ");
@@ -582,7 +605,7 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case AppView.LOGIN: return <Login onLogin={handleLogin} onNavigateRegister={() => { setRegisterError(null); setCurrentView(AppView.REGISTER); }} error={loginError} />;
+      case AppView.LOGIN: return <Login onLogin={handleLogin} onNavigateRegister={() => { setRegisterError(null); setCurrentView(AppView.REGISTER); }} error={loginError} dbStatus={{ connected: dbConnected, error: dbError }} />;
       case AppView.REGISTER: return <Register onBack={() => setCurrentView(AppView.LOGIN)} onRegister={handleRegister} error={registerError} />;
       case AppView.DASHBOARD: 
         return (
@@ -641,7 +664,7 @@ const App: React.FC = () => {
             }}
           />
         );
-      case AppView.ADMIN_DASHBOARD: return <AdminDashboard user={user} loans={loans} registeredUsersCount={registeredUsers.length} systemBudget={systemBudget} rankProfit={rankProfit} onResetRankProfit={handleResetRankProfit} onLogout={handleLogout} />;
+      case AppView.ADMIN_DASHBOARD: return <AdminDashboard user={user} loans={loans} registeredUsersCount={registeredUsers.length} systemBudget={systemBudget} rankProfit={rankProfit} onResetRankProfit={handleResetRankProfit} onLogout={handleLogout} dbStatus={{ connected: dbConnected, error: dbError }} />;
       case AppView.ADMIN_USERS: return <AdminUserManagement users={registeredUsers} loans={loans} onAction={handleAdminUserAction} onLoanAction={handleAdminLoanAction} onDeleteUser={handleDeleteUser} onAutoCleanup={handleAutoCleanupUsers} onBack={() => setCurrentView(AppView.ADMIN_DASHBOARD)} />;
       case AppView.ADMIN_BUDGET: return <AdminBudget currentBudget={systemBudget} onUpdate={(val) => setSystemBudget(val)} onBack={() => setCurrentView(AppView.ADMIN_DASHBOARD)} />;
       default: return <Dashboard user={user} loans={loans} systemBudget={systemBudget} onApply={() => setCurrentView(AppView.APPLY_LOAN)} onLogout={handleLogout} onViewAllLoans={() => setCurrentView(AppView.APPLY_LOAN)} />;
@@ -649,6 +672,30 @@ const App: React.FC = () => {
   };
 
   const showNavbar = user && currentView !== AppView.LOGIN && currentView !== AppView.REGISTER;
+
+  if (dbError) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+          <AlertTriangle size={40} className="text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black uppercase mb-4 text-white tracking-tighter">Lỗi Kết Nối Database</h2>
+        <div className="bg-[#111] border border-red-500/30 p-6 rounded-2xl mb-8 max-w-md w-full">
+          <p className="text-[10px] text-gray-500 uppercase mb-2 font-bold tracking-widest">Chi tiết lỗi chính xác:</p>
+          <p className="text-sm text-red-400 font-mono break-all">{dbError}</p>
+        </div>
+        <p className="text-xs text-gray-500 mb-8 uppercase max-w-xs leading-relaxed">
+          Hệ thống không thể kết nối tới MongoDB Atlas. Vui lòng kiểm tra lại cấu hình MONGODB_URI hoặc trạng thái Cluster.
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-10 py-4 bg-white text-black font-black rounded-full text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-2xl shadow-red-500/20"
+        >
+          Thử kết nối lại
+        </button>
+      </div>
+    );
+  }
 
   if (!isInitialized) {
     return (
