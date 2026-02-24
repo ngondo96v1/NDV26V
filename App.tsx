@@ -682,7 +682,15 @@ const App: React.FC = () => {
         <h2 className="text-2xl font-black uppercase mb-4 text-white tracking-tighter">Lỗi Kết Nối Database</h2>
         <div className="bg-[#111] border border-red-500/30 p-6 rounded-2xl mb-8 max-w-md w-full">
           <p className="text-[10px] text-gray-500 uppercase mb-2 font-bold tracking-widest">Chi tiết lỗi chính xác:</p>
-          <p className="text-sm text-red-400 font-mono break-all">{dbError}</p>
+          <p className="text-sm text-red-400 font-mono break-all mb-4">{dbError}</p>
+          <div className="pt-4 border-t border-white/5 text-left">
+            <p className="text-[10px] text-[#ff8c00] font-black uppercase mb-2 tracking-widest">Hướng dẫn khắc phục:</p>
+            <ul className="text-[10px] text-gray-400 space-y-1 list-disc pl-4 uppercase font-bold">
+              <li>Kiểm tra IP Whitelist trên MongoDB Atlas (Thêm 0.0.0.0/0)</li>
+              <li>Kiểm tra Username/Password trong chuỗi kết nối</li>
+              <li>Đảm bảo Cluster không bị tạm dừng (Paused)</li>
+            </ul>
+          </div>
         </div>
         <p className="text-xs text-gray-500 mb-8 uppercase max-w-xs leading-relaxed">
           Hệ thống không thể kết nối tới MongoDB Atlas. Vui lòng kiểm tra lại cấu hình MONGODB_URI hoặc trạng thái Cluster.
