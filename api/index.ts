@@ -4,31 +4,31 @@ import mongoose from "mongoose";
 import { User, Loan, Notification, System } from "../models";
 
 const app = express();
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/vnv_money";
 
 let isConnected = false;
+let dbError: string | null = null;
 
 async function connectDB() {
   if (isConnected) return;
   
-  if (!MONGODB_URI) {
-    console.warn("MONGODB_URI is not defined. Using local fallback for development if applicable.");
-    // In Vercel, this should be defined.
-    return;
-  }
-
+  const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://ngondo96:119011@ndv261.n9yuhgn.mongodb.net/ndv261?retryWrites=true&w=majority&appName=NDV261";
+  
   try {
+    console.log("Attempting to connect to MongoDB...");
     await mongoose.connect(MONGODB_URI);
     isConnected = true;
-    console.log("Connected to MongoDB");
+    dbError = null;
+    console.log("Successfully connected to MongoDB");
     
     // Initialize system settings if not exists
     const system = await System.findOne({ key: "main" });
     if (!system) {
       await System.create({ key: "main", budget: 30000000, rankProfit: 0 });
     }
-  } catch (err) {
-    console.error("MongoDB connection error:", err);
+  } catch (err: any) {
+    isConnected = false;
+    dbError = err.message || JSON.stringify(err);
+    console.error("MongoDB connection error details:", err);
   }
 }
 
@@ -39,6 +39,16 @@ app.use(express.json({ limit: '50mb' }));
 app.use(async (req, res, next) => {
   await connectDB();
   next();
+});
+
+// Status endpoint to check DB connection
+app.get("/api/db-status", (req, res) => {
+  res.json({
+    connected: isConnected,
+    error: dbError,
+    uri_provided: !!process.env.MONGODB_URI,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // API Routes
